@@ -1,4 +1,9 @@
 import axios from 'axios';
+
+const API = axios.create({
+  baseURL: 'http://localhost:5000',
+  withCredentials: true,
+});
 axios.defaults.withCredentials = true;
 
 export const register       = data => axios.post('/api/users/register', data);

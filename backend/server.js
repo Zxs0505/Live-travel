@@ -4,23 +4,38 @@ const mongoose   = require('mongoose');
 const session    = require('express-session');
 const MongoStore = require('connect-mongo');
 const passport   = require('passport');
-const usersRoute = require('./routes/users');
-const ctsRoute   = require('./routes/concerts');
-const itiRoute   = require('./routes/itineraries');
+const cors       = require('cors');
+const path       = require('path');
+
 require('./config/passport')(passport);
 
 mongoose.connect(process.env.MONGO_URI);
+
 const app = express();
-app.use(express.json(), express.urlencoded({extended:false}));
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(session({
   secret: process.env.SESSION_SECRET,
-  resave: false, saveUninitialized: false,
+  resave: false,
+  saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI })
 }));
-app.use(passport.initialize(), passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.use('/api/users', usersRoute);
-app.use('/api/concerts', ctsRoute);
-app.use('/api/itineraries', itiRoute);
+app.use('/api/users', require('./routes/users'));
+app.use('/api/concerts', require('./routes/concerts'));
+app.use('/api/itineraries', require('./routes/itineraries'));
 
-app.listen(5000, ()=>console.log('Backend @ http://localhost:5000'));
+// 生产环境下托管前端
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
+
+app.listen(process.env.PORT||5000, () =>
+  console.log('Server running on port ' + (process.env.PORT||5000))
+);
